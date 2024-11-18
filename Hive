@@ -21,7 +21,7 @@ FIELDS TERMINATED BY '\t'  -- Assuming tab-separated values
 STORED AS TEXTFILE;
 
 -- Step 2: Load the data from the input TSV file into the table
-LOAD DATA INPATH '/home/gg7hz/Downloads/amazon_reviews_us_Camera_v1_00.tsv'
+LOAD DATA LOCAL INPATH '/home/gg7hz/Downloads/amazon_reviews_us_Camera_v1_00.tsv'
 INTO TABLE amazon_reviews_camera;
 
 -- Step 3: Filter out the header row (where review_id is 'review_id') and filter out rows with missing or invalid values
