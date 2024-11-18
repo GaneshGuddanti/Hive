@@ -1,5 +1,5 @@
 -- Step 1: Create a table to load the data
-CREATE TABLE IF NOT EXISTS amazon_reviews_camera (
+CREATE TABLE IF NOT EXISTS amazon_reviews_Video_Games (
     marketplace STRING,
     customer_id STRING,
     review_id STRING,
@@ -21,11 +21,11 @@ FIELDS TERMINATED BY '\t'  -- Assuming tab-separated values
 STORED AS TEXTFILE;
 
 -- Step 2: Load the data from the input TSV file into the table
-LOAD DATA LOCAL INPATH '/home/gg7hz/Downloads/amazon_reviews_us_Camera_v1_00.tsv'
+LOAD DATA LOCAL INPATH '/home/gg7hz/Downloads/amazon_reviews_us_Video_Games_v1_00.tsv'
 INTO TABLE amazon_reviews_camera;
 
 -- Step 3: Filter out the header row (where review_id is 'review_id') and filter out rows with missing or invalid values
-CREATE TABLE amazon_reviews_camera_cleaned AS
+CREATE TABLE amazon_reviews_Video_Games_cleaned AS
 SELECT 
     marketplace,
     customer_id,
@@ -42,7 +42,7 @@ SELECT
     review_headline,
     review_body,
     review_date
-FROM amazon_reviews_camera
+FROM amazon_reviews_Video_Games
 WHERE review_id != 'review_id'  -- Remove the header row
   AND marketplace IS NOT NULL 
   AND customer_id IS NOT NULL 
@@ -76,10 +76,50 @@ WHERE review_id != 'review_id'  -- Remove the header row
 INSERT OVERWRITE DIRECTORY '/user/hive/warehouse/cleaned_data_output'
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
-SELECT * FROM amazon_reviews_camera_cleaned;
+SELECT * FROM amazon_reviews_Video_Games_cleaned;
 
 -- Or you can create another table to store the cleaned data:
-CREATE TABLE amazon_reviews_camera_cleaned_final AS
-SELECT * FROM amazon_reviews_camera_cleaned;
+CREATE TABLE OutputTable AS
+SELECT * FROM amazon_reviews_Video_Games_cleaned;
 
 -- End of the script
+
+
+Question 1a:
+-- Step 1: Create 'GameTable' to load the cleaned data from the 'amazon_reviews_camera_cleaned' table
+CREATE TABLE IF NOT EXISTS GameTable (
+    marketplace STRING,
+    customer_id STRING,
+    review_id STRING,
+    product_id STRING,
+    product_parent STRING,
+    product_title STRING,
+    product_category STRING,
+    star_rating INT,
+    helpful_votes INT,
+    total_votes INT,
+    vine STRING,
+    verified_purchase STRING,
+    review_headline STRING,
+    review_body STRING,
+    review_date STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+STORED AS TEXTFILE;
+
+-- Step 2: Insert data from 'amazon_reviews_camera_cleaned' into 'GameTable'
+INSERT INTO TABLE GameTable
+SELECT * FROM OutputTable;
+
+Question 1b:
+-- Step 3: Query for total number of review_id and average star_rating where marketplace is not 'US'
+SELECT 
+    marketplace, 
+    product_category, 
+    COUNT(review_id) AS total_reviews,
+    AVG(star_rating) AS average_star_rating
+FROM GameTable
+WHERE marketplace != 'US'  -- Exclude marketplace 'US'
+GROUP BY marketplace, product_category;
+
