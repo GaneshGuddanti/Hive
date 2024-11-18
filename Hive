@@ -1,0 +1,85 @@
+-- Step 1: Create a table to load the data
+CREATE TABLE IF NOT EXISTS amazon_reviews_camera (
+    marketplace STRING,
+    customer_id STRING,
+    review_id STRING,
+    product_id STRING,
+    product_parent STRING,
+    product_title STRING,
+    product_category STRING,
+    star_rating INT,
+    helpful_votes INT,
+    total_votes INT,
+    vine STRING,
+    verified_purchase STRING,
+    review_headline STRING,
+    review_body STRING,
+    review_date STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'  -- Assuming tab-separated values
+STORED AS TEXTFILE;
+
+-- Step 2: Load the data from the input TSV file into the table
+LOAD DATA INPATH '/home/gg7hz/Downloads/amazon_reviews_us_Camera_v1_00.tsv'
+INTO TABLE amazon_reviews_camera;
+
+-- Step 3: Filter out the header row (where review_id is 'review_id') and filter out rows with missing or invalid values
+CREATE TABLE amazon_reviews_camera_cleaned AS
+SELECT 
+    marketplace,
+    customer_id,
+    review_id,
+    product_id,
+    product_parent,
+    product_title,
+    product_category,
+    star_rating,
+    helpful_votes,
+    total_votes,
+    vine,
+    verified_purchase,
+    review_headline,
+    review_body,
+    review_date
+FROM amazon_reviews_camera
+WHERE review_id != 'review_id'  -- Remove the header row
+  AND marketplace IS NOT NULL 
+  AND customer_id IS NOT NULL 
+  AND review_id IS NOT NULL 
+  AND product_id IS NOT NULL 
+  AND product_title IS NOT NULL 
+  AND product_category IS NOT NULL 
+  AND star_rating > 0 
+  AND helpful_votes >= 0 
+  AND total_votes >= 0 
+  AND vine IS NOT NULL 
+  AND verified_purchase IS NOT NULL 
+  AND review_headline IS NOT NULL 
+  AND review_body IS NOT NULL 
+  AND review_date IS NOT NULL
+  AND marketplace != '' 
+  AND customer_id != '' 
+  AND review_id != '' 
+  AND product_id != '' 
+  AND product_parent != '' 
+  AND product_title != '' 
+  AND product_category != '' 
+  AND vine != '' 
+  AND verified_purchase != '' 
+  AND review_headline != '' 
+  AND review_body != '' 
+  AND review_date != '';
+
+-- Step 4: Store the cleaned data into an output directory (or into a new table if you prefer)
+-- If you want to store it in a new file (TSV format):
+INSERT OVERWRITE DIRECTORY '/user/hive/warehouse/cleaned_data_output'
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+SELECT * FROM amazon_reviews_camera_cleaned;
+
+-- Or you can create another table to store the cleaned data:
+CREATE TABLE amazon_reviews_camera_cleaned_final AS
+SELECT * FROM amazon_reviews_camera_cleaned;
+
+-- End of the script
