@@ -1,0 +1,53 @@
+CREATE TABLE raw_data (
+    marketplace STRING,
+    customer_id STRING,
+    review_id STRING,
+    product_id STRING,
+    product_parent STRING,
+    product_title STRING,
+    product_category STRING,
+    star_rating STRING,
+    helpful_votes STRING,
+    total_votes STRING,
+    vine STRING,
+    verified_purchase STRING,
+    review_headline STRING,
+    review_body STRING,
+    review_date STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+STORED AS TEXTFILE;
+
+LOAD DATA LOCAL INPATH '/home/gg7hz/Downloads/amazon_reviews_us_Video_Games_v1_00.tsv' INTO TABLE raw_data;
+
+CREATE TABLE prepTable AS
+SELECT
+    -- Replace NULL in character columns with 'N/A'
+    COALESCE(review_id, 'N/A') AS review_id,
+    COALESCE(marketplace, 'N/A') AS marketplace,
+    COALESCE(customer_id, 'N/A') AS customer_id,
+    COALESCE(product_id, 'N/A') AS product_id,
+    COALESCE(product_parent, 'N/A') AS product_parent,
+    COALESCE(product_title, 'N/A') AS product_title,
+    COALESCE(product_category, 'N/A') AS product_category,
+    COALESCE(vine, 'N/A') AS vine,
+    COALESCE(verified_purchase, 'N/A') AS verified_purchase,
+    COALESCE(review_headline, 'N/A') AS review_headline,
+    COALESCE(review_body, 'N/A') AS review_body,
+
+    -- Replace NULL or invalid values in numeric columns with 0
+    CAST(COALESCE(NULLIF(star_rating, ''), '0') AS INT) AS star_rating,
+    CAST(COALESCE(NULLIF(helpful_votes, ''), '0') AS INT) AS helpful_votes,
+    CAST(COALESCE(NULLIF(total_votes, ''), '0') AS INT) AS total_votes,
+
+    -- Format the date column to 'YYYY-MM-DD'
+    CAST(
+        CASE
+            WHEN review_date IS NOT NULL AND review_date RLIKE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+            THEN review_date
+            ELSE '1900-01-01'  -- Default date if invalid
+        END AS DATE
+    ) AS review_date
+FROM
+    raw_data;
