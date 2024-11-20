@@ -238,13 +238,22 @@ SELECT
     review_date
 FROM GameTable;
 
--- Find the minimum and maximum review_date for each bucket
+-- Step 1: Simulate bucketing by using NTILE(3) to partition by review_date
 SELECT 
-    BUCKET(3) AS bucket,   -- Specify the bucket number (0, 1, or 2)
+    bucket_num,
     MIN(review_date) AS min_review_date,
     MAX(review_date) AS max_review_date
-FROM GameTableBuck
-GROUP BY BUCKET(3);  -- Group by the bucket number
+FROM (
+    SELECT 
+        NTILE(3) OVER (ORDER BY review_date) AS bucket_num, 
+        review_date
+    FROM GameTableBuck
+) AS Buckets
+
+-- Step 2: Group by bucket_num to calculate min and max review_date for each bucket
+GROUP BY bucket_num
+ORDER BY bucket_num;
+
 
 Queation 3b:
 -- Find average helpful_votes and total_votes for each product_id where average helpful_votes > 1
