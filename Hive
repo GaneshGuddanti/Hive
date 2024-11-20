@@ -1,3 +1,7 @@
+Create Database hivehw;
+
+use hivehw;
+
 -- Step 1: Create a table to load the data
 CREATE TABLE IF NOT EXISTS amazon_reviews_Video_Games (
     marketplace STRING,
@@ -71,13 +75,6 @@ WHERE review_id != 'review_id'  -- Remove the header row
   AND review_body != '' 
   AND review_date != '';
 
--- Step 4: Store the cleaned data into an output directory (or into a new table if you prefer)
--- If you want to store it in a new file (TSV format):
-INSERT OVERWRITE DIRECTORY '/user/hive/warehouse/cleaned_data_output'
-ROW FORMAT DELIMITED
-FIELDS TERMINATED BY '\t'
-SELECT * FROM amazon_reviews_Video_Games_cleaned;
-
 -- Or you can create another table to store the cleaned data:
 CREATE TABLE OutputTable AS
 SELECT * FROM amazon_reviews_Video_Games_cleaned;
@@ -122,4 +119,140 @@ SELECT
 FROM GameTable
 WHERE marketplace != 'US'  -- Exclude marketplace 'US'
 GROUP BY marketplace, product_category;
+
+Question 2:
+CREATE TABLE IF NOT EXISTS GameTablePart (
+    marketplace STRING,
+    customer_id STRING,
+    review_id STRING,
+    product_id STRING,
+    product_parent STRING,
+    product_title STRING,
+    product_category STRING,
+    helpful_votes INT,
+    total_votes INT,
+    vine STRING,
+    verified_purchase STRING,
+    review_headline STRING,
+    review_body STRING,
+    review_date STRING
+)
+PARTITIONED BY (star_rating INT)  -- Partition by star_rating
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+STORED AS TEXTFILE;
+
+Question 2a:
+
+-- Insert data into partition where star_rating = 1
+INSERT INTO TABLE GameTablePart PARTITION (star_rating=1)
+SELECT 
+    marketplace,
+    customer_id,
+    review_id,
+    product_id,
+    product_parent,
+    product_title,
+    product_category,
+    helpful_votes,
+    total_votes,
+    vine,
+    verified_purchase,
+    review_headline,
+    review_body,
+    review_date
+FROM GameTable
+WHERE star_rating = 1;
+
+-- Insert data into partition where star_rating = 2
+INSERT INTO TABLE GameTablePart PARTITION (star_rating=2)
+SELECT 
+    marketplace,
+    customer_id,
+    review_id,
+    product_id,
+    product_parent,
+    product_title,
+    product_category,
+    helpful_votes,
+    total_votes,
+    vine,
+    verified_purchase,
+    review_headline,
+    review_body,
+    review_date
+FROM GameTable
+WHERE star_rating = 2;
+
+Question 2b:
+
+SELECT 
+    star_rating,
+    SUM(helpful_votes) AS total_helpful_votes,
+    SUM(total_votes) AS total_votes
+FROM GameTablePart
+GROUP BY star_rating
+ORDER BY total_votes DESC;
+
+Question 3:
+
+CREATE TABLE IF NOT EXISTS GameTableBuck (
+    marketplace STRING,
+    customer_id STRING,
+    review_id STRING,
+    product_id STRING,
+    product_parent STRING,
+    product_title STRING,
+    product_category STRING,
+    star_rating INT,
+    helpful_votes INT,
+    total_votes INT,
+    vine STRING,
+    verified_purchase STRING,
+    review_headline STRING,
+    review_body STRING,
+    review_date STRING
+)
+CLUSTERED BY (review_date) INTO 3 BUCKETS  -- Bucketing on 'review_date' with 3 buckets
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+STORED AS TEXTFILE;
+
+-- Insert all data from GameTable into GameTableBuck
+INSERT INTO TABLE GameTableBuck
+SELECT 
+    marketplace,
+    customer_id,
+    review_id,
+    product_id,
+    product_parent,
+    product_title,
+    product_category,
+    star_rating,
+    helpful_votes,
+    total_votes,
+    vine,
+    verified_purchase,
+    review_headline,
+    review_body,
+    review_date
+FROM GameTable;
+
+-- Find the minimum and maximum review_date for each bucket
+SELECT 
+    BUCKET(3) AS bucket,   -- Specify the bucket number (0, 1, or 2)
+    MIN(review_date) AS min_review_date,
+    MAX(review_date) AS max_review_date
+FROM GameTableBuck
+GROUP BY BUCKET(3);  -- Group by the bucket number
+
+Queation 3b:
+-- Find average helpful_votes and total_votes for each product_id where average helpful_votes > 1
+SELECT 
+    product_id,
+    AVG(helpful_votes) AS avg_helpful_votes,
+    AVG(total_votes) AS avg_total_votes
+FROM GameTableBuck
+GROUP BY product_id
+HAVING AVG(helpful_votes) > 1;
 
