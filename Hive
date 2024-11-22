@@ -265,3 +265,4 @@ FROM GameTableBuck
 GROUP BY product_id
 HAVING AVG(helpful_votes) > 1;
 
+set hive.cli.print.header=true;
