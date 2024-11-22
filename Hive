@@ -26,7 +26,7 @@ STORED AS TEXTFILE;
 
 -- Step 2: Load the data from the input TSV file into the table
 LOAD DATA LOCAL INPATH '/home/gg7hz/Downloads/amazon_reviews_us_Video_Games_v1_00.tsv'
-INTO TABLE amazon_reviews_camera;
+INTO TABLE amazon_reviews_Video_Games;
 
 -- Step 3: Filter out the header row (where review_id is 'review_id') and filter out rows with missing or invalid values
 CREATE TABLE amazon_reviews_Video_Games_cleaned AS
