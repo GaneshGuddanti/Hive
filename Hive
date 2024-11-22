@@ -107,7 +107,7 @@ STORED AS TEXTFILE;
 
 -- Step 2: Insert data from 'amazon_reviews_camera_cleaned' into 'GameTable'
 INSERT INTO TABLE GameTable
-SELECT * FROM OutputTable;
+SELECT * FROM amazon_reviews_camera_cleaned;
 
 Question 1b:
 -- Step 3: Query for total number of review_id and average star_rating where marketplace is not 'US'
